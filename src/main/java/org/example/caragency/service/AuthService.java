@@ -57,8 +57,8 @@ public class AuthService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", manager.getUserName());
         claims.put("role", "MANAGER");
-        claims.put("managerName", manager.getManagerName());
-        claims.put("managerEmail", manager.getManagerEmail());
+        claims.put("managerName", manager.getUserName());
+        claims.put("managerEmail", manager.getEmail());
         claims.put("userId", manager.getUserId());
 
         return Jwts.builder()

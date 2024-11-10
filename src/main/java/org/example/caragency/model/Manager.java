@@ -1,26 +1,22 @@
 package org.example.caragency.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.PrimaryKeyJoinColumn;
 
 @Entity
+@PrimaryKeyJoinColumn(name = "user_id")
 public class Manager extends User {
-    private String managerName;
-    private String managerEmail;
+    private Integer departmentCode;
 
-    // Getters and Setters
-    public String getManagerName() {
-        return managerName;
+    public Manager() {
+        this.setRole(UserRole.MANAGER);
     }
 
-    public void setManagerName(String managerName) {
-        this.managerName = managerName;
+    public Integer getDepartmentCode() {
+        return departmentCode;
     }
 
-    public String getManagerEmail() {
-        return managerEmail;
-    }
-
-    public void setManagerEmail(String managerEmail) {
-        this.managerEmail = managerEmail;
+    public void setDepartmentCode(Integer departmentCode) {
+        this.departmentCode = departmentCode;
     }
 }

@@ -1,104 +1,59 @@
 package org.example.caragency.controller;
-
+import lombok.RequiredArgsConstructor;
 import org.example.caragency.dto.AuthResponse;
-import org.example.caragency.model.Manager;
-import org.example.caragency.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.example.caragency.service.UserService;
+import org.example.caragency.utils.JwtService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.example.caragency.dto.LoginRequest;
+import org.example.caragency.dto.RegisterRequest;
+import org.example.caragency.model.User;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
-    private AuthService authService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        String token = authService.login(loginRequest.getUsername(), loginRequest.getPassword());
+    public ResponseEntity<?> authenticate(@RequestBody LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsernameOrEmail(),
+                        request.getPassword()
+                )
+        );
 
-        if (token != null) {
-            // Get manager details from token
-            Manager manager = authService.validateTokenAndGetManager(token);
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String token = jwtService.generateToken(userDetails);
 
-            if (manager != null) {
-                // Create response with full manager details
-                AuthResponse response = new AuthResponse(
-                        token,
-                        manager.getUserName(),
-                        manager.getManagerName(),
-                        manager.getManagerEmail()
-                );
-
-                return ResponseEntity.ok(response);
-            }
-        }
-
-        return ResponseEntity.badRequest().body("Invalid credentials");
+        return ResponseEntity.ok(new AuthResponse(token));
     }
 
-    @PutMapping("/change-password")
-    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
-        boolean success = authService.changePassword(request.getUsername(), request.getOldPassword(), request.getNewPassword());
-        return success ? ResponseEntity.ok("Password updated successfully") : ResponseEntity.status(400).build();
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<String> logout() {
-        authService.logout("sample");
-        return ResponseEntity.ok("Logged out successfully");
-    }
-
-    // Request DTOs
-    public static class LoginRequest {
-        private String username;
-        private String password;
-
-        public String getUsername() {
-            return username;
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
+        // Check if user already exists
+        if (userService.existsByEmail(request.getEmail())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("Error: Email is already in use!");
         }
 
-        public void setUsername(String username) {
-            this.username = username;
-        }
+        // Create new user
+        User user = new User();
+        user.setUserName(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+        user.setRole(request.getRole());
 
-        public String getPassword() {
-            return password;
-        }
+        userService.saveUser(user);
 
-        public void setPassword(String password) {
-            this.password = password;
-        }
-    }
-
-    public static class ChangePasswordRequest {
-        private String username;
-        private String oldPassword;
-        private String newPassword;
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getOldPassword() {
-            return oldPassword;
-        }
-
-        public void setOldPassword(String oldPassword) {
-            this.oldPassword = oldPassword;
-        }
-
-        public String getNewPassword() {
-            return newPassword;
-        }
-
-        public void setNewPassword(String newPassword) {
-            this.newPassword = newPassword;
-        }
+        return ResponseEntity.ok("User registered successfully!");
     }
 }

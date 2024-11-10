@@ -17,11 +17,4 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
-        String token = userService.registerUser(user);
-        return ResponseEntity.ok("JWT Token: " + token); // or use JSON format for API responses
-    }
-
-    // Add login endpoint similarly if required
 }
