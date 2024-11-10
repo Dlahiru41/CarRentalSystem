@@ -1,23 +1,14 @@
 package org.example.caragency.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 
 @Entity
-@PrimaryKeyJoinColumn(name = "user_id")
+@Table(name = "customer")
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class Customer extends User {
-
-    private Integer customerNumber;
-
-    public Customer() {
-        this.setRole(UserRole.CUSTOMER);
-    }
-
-    public Integer getCustomerNumber() {
-        return customerNumber;
-    }
-
-    public void setCustomerNumber(Integer customerNumber) {
-        this.customerNumber = customerNumber;
-    }
+    private String customerNumber;
 }

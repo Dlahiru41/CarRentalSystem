@@ -2,21 +2,14 @@ package org.example.caragency.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
-@PrimaryKeyJoinColumn(name = "user_id")
+@Table(name = "manager")
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class Manager extends User {
-    private Integer departmentCode;
-
-    public Manager() {
-        this.setRole(UserRole.MANAGER);
-    }
-
-    public Integer getDepartmentCode() {
-        return departmentCode;
-    }
-
-    public void setDepartmentCode(Integer departmentCode) {
-        this.departmentCode = departmentCode;
-    }
+    private String departmentCode;
 }

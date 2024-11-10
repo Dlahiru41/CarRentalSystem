@@ -1,6 +1,6 @@
 package org.example.caragency.service;
 
-import org.example.caragency.model.User;
+import org.example.caragency.model.*;
 import org.example.caragency.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -26,9 +27,9 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        User user = userRepository.findByUserNameOrEmail(usernameOrEmail, usernameOrEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username/email: " + usernameOrEmail));
 
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
@@ -40,10 +41,69 @@ public class UserService implements UserDetailsService {
         );
     }
 
-    public User saveUser(User user) {
-        // Encode password before saving
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public User saveUser(User userDetails) {
+        // Check if username or email already exists
+        if (userRepository.existsByUserName(userDetails.getUserName())) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (userRepository.existsByEmail(userDetails.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // Encode password
+        String encodedPassword = passwordEncoder.encode(userDetails.getPassword());
+
+        // Create appropriate user type based on role
+        User user = createUserByRole(userDetails.getRole());
+
+        // Set common properties
+        user.setUserName(userDetails.getUserName());
+        user.setEmail(userDetails.getEmail());
+        user.setPassword(encodedPassword);
+        user.setPhoneNumber(userDetails.getPhoneNumber());
+        user.setAddress(userDetails.getAddress());
+        user.setRole(userDetails.getRole());
+
+        // Set role-specific properties
+        switch (userDetails.getRole()) {
+            case CUSTOMER:
+                ((Customer) user).setCustomerNumber(generateCustomerNumber());
+                break;
+            case STAFF:
+                ((Staff) user).setEmployeeId(generateEmployeeId());
+                break;
+            case MANAGER:
+                ((Manager) user).setDepartmentCode(generateDepartmentCode());
+                break;
+        }
+
         return userRepository.save(user);
+    }
+
+    private User createUserByRole(UserRole role) {
+        switch (role) {
+            case CUSTOMER:
+                return new Customer();
+            case STAFF:
+                return new Staff();
+            case MANAGER:
+                return new Manager();
+            default:
+                throw new IllegalArgumentException("Invalid role: " + role);
+        }
+    }
+
+    // Helper methods to generate IDs
+    private String generateCustomerNumber() {
+        return "CUST-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    private String generateEmployeeId() {
+        return "EMP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    private String generateDepartmentCode() {
+        return "DEPT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     public User updateUser(User user) {
